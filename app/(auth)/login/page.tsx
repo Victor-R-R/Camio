@@ -29,6 +29,7 @@ export default function LoginPage() {
       setError("Email ou mot de passe incorrect");
       setLoading(false);
     } else {
+      router.refresh();
       router.push("/lists/new");
     }
   }
