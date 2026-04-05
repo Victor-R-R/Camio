@@ -4,10 +4,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import {
-  createChantier, toggleChantierActive,
-  createChauffeur, toggleChauffeurActive,
-  createMateriau, toggleMateriauActive,
+  toggleChantierActive,
+  toggleChauffeurActive,
+  toggleMateriauActive,
 } from "@/lib/actions/catalogue";
+import {
+  createChantierForm,
+  createChauffeurForm,
+  createMateriauForm,
+} from "@/lib/actions/catalogue-forms";
 import { Unit } from "@/lib/generated/prisma/enums";
 
 const UNITS = Object.values(Unit) as Unit[];
@@ -33,13 +38,7 @@ export default async function CataloguePage() {
         {/* Matériaux */}
         <TabsContent value="materiaux" className="space-y-4 mt-4">
           <form
-            action={async (fd: FormData) => {
-              "use server";
-              await createMateriau({
-                designation: fd.get("designation") as string,
-                defaultUnit: fd.get("defaultUnit") as Unit,
-              });
-            }}
+            action={createMateriauForm}
             className="flex gap-2"
           >
             <Input name="designation" placeholder="Désignation" required className="max-w-xs" />
@@ -83,13 +82,7 @@ export default async function CataloguePage() {
         {/* Chantiers */}
         <TabsContent value="chantiers" className="space-y-4 mt-4">
           <form
-            action={async (fd: FormData) => {
-              "use server";
-              await createChantier({
-                name: fd.get("name") as string,
-                address: (fd.get("address") as string) || undefined,
-              });
-            }}
+            action={createChantierForm}
             className="flex gap-2"
           >
             <Input name="name" placeholder="Nom du chantier" required className="max-w-xs" />
@@ -131,13 +124,7 @@ export default async function CataloguePage() {
         {/* Chauffeurs */}
         <TabsContent value="chauffeurs" className="space-y-4 mt-4">
           <form
-            action={async (fd: FormData) => {
-              "use server";
-              await createChauffeur({
-                name: fd.get("name") as string,
-                phone: (fd.get("phone") as string) || undefined,
-              });
-            }}
+            action={createChauffeurForm}
             className="flex gap-2"
           >
             <Input name="name" placeholder="Nom du chauffeur" required className="max-w-xs" />
