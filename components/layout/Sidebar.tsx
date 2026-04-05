@@ -5,12 +5,13 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Plus, Clock, BookOpen, Settings, LogOut, Truck } from "lucide-react";
+import { Plus, Clock, BookOpen, Settings, LogOut, Truck, BarChart2 } from "lucide-react";
 
 const navItems = [
   { href: "/lists/new", label: "Nouvelle liste", icon: Plus },
   { href: "/history", label: "Historique", icon: Clock },
   { href: "/catalogue", label: "Catalogue", icon: BookOpen },
+  { href: "/stats", label: "Statistiques", icon: BarChart2 },
   { href: "/settings", label: "Paramètres", icon: Settings },
 ];
 
