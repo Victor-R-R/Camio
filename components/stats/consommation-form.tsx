@@ -40,6 +40,8 @@ export function ConsommationForm({
   open,
   onOpenChange,
 }: Props) {
+  // Component unmounts between opens (parent uses conditional render),
+  // so this initializer always runs fresh.
   const [selectedMateriauId, setSelectedMateriauId] = useState(
     materiaux[0]?.id ?? ""
   );
@@ -111,7 +113,6 @@ export function ConsommationForm({
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               required
-              autoFocus
             />
           </div>
           <div className="space-y-1">
