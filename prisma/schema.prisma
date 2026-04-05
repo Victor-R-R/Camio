@@ -1,0 +1,106 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  role         Role          @default(BUREAU)
+  createdAt    DateTime      @default(now())
+  lists        LoadingList[]
+}
+
+enum Role {
+  BUREAU
+  ADMIN
+}
+
+model Chantier {
+  id      String        @id @default(cuid())
+  name    String
+  address String?
+  active  Boolean       @default(true)
+  lists   LoadingList[]
+}
+
+model Chauffeur {
+  id     String        @id @default(cuid())
+  name   String
+  phone  String?
+  active Boolean       @default(true)
+  lists  LoadingList[]
+}
+
+model Materiau {
+  id          String            @id @default(cuid())
+  designation String
+  defaultUnit Unit
+  active      Boolean           @default(true)
+  items       LoadingListItem[]
+}
+
+enum Unit {
+  U
+  M
+  M2
+  M3
+  KG
+  T
+  L
+  ROULEAU
+  SAC
+  PALETTE
+}
+
+model LoadingList {
+  id            String            @id @default(cuid())
+  date          DateTime
+  departureTime String
+  chantierId    String
+  chantier      Chantier          @relation(fields: [chantierId], references: [id])
+  chauffeurId   String
+  chauffeur     Chauffeur         @relation(fields: [chauffeurId], references: [id])
+  responsable   String
+  notes         String?
+  status        ListStatus        @default(DRAFT)
+  shareToken    String            @unique @default(uuid())
+  createdById   String
+  createdBy     User              @relation(fields: [createdById], references: [id])
+  createdAt     DateTime          @default(now())
+  items         LoadingListItem[]
+}
+
+enum ListStatus {
+  DRAFT
+  GENERATED
+  LOADED
+  DELIVERED
+}
+
+model LoadingListItem {
+  id          String      @id @default(cuid())
+  listId      String
+  list        LoadingList @relation(fields: [listId], references: [id], onDelete: Cascade)
+  materiauId  String?
+  materiau    Materiau?   @relation(fields: [materiauId], references: [id])
+  designation String
+  quantity    Float
+  unit        Unit
+  order       Int
+  checked     Boolean     @default(false)
+}
+
+model CompanySettings {
+  id      String  @id @default("singleton")
+  name    String  @default("Mon Entreprise")
+  logoUrl String?
+  address String?
+  phone   String?
+}
