@@ -23,7 +23,14 @@ export function ChecklistView({ items: initialItems, listId }: Props) {
 
   function handleToggle(itemId: string, checked: boolean) {
     setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, checked } : i)));
-    startTransition(() => { toggleItem(itemId, listId, checked); });
+    startTransition(async () => {
+      try {
+        await toggleItem(itemId, listId, checked);
+      } catch {
+        // revert optimistic update
+        setItems((prev) => prev.map((i) => (i.id === itemId ? { ...i, checked: !checked } : i)));
+      }
+    });
   }
 
   const checkedCount = items.filter((i) => i.checked).length;

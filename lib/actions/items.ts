@@ -43,7 +43,7 @@ export async function reorderItems(listId: string, orderedIds: string[]) {
 
 export async function toggleItem(itemId: string, listId: string, checked: boolean) {
   await prisma.loadingListItem.update({
-    where: { id: itemId },
+    where: { id: itemId, listId },
     data: { checked },
   });
 

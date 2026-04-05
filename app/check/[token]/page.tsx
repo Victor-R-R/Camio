@@ -49,7 +49,7 @@ export default async function CheckPage({ params }: { params: Promise<{ token: s
             id: i.id,
             designation: i.designation,
             quantity: i.quantity,
-            unit: i.unit as string,
+            unit: String(i.unit ?? ""),
             checked: i.checked,
           }))}
           listId={list.id}
