@@ -47,3 +47,9 @@ app/check/[token]/  — checklist mobile (public)
 - `StatsTable` : affiche consommé / alloué / % / projection avec badges
 - `StatsFilters` : filtres chantier et matériau
 - Server Actions dans `lib/actions/stats.ts`
+
+## Convention : visibilité automatique dans /stats
+
+**Tout matériau actif doit apparaître dans `/stats` dès sa création**, même sans données (allocation, transport ou consommation). La liste `MateriauStats[]` est initialisée depuis `prisma.materiau.findMany({ where: { active: true } })` puis enrichie avec les données. Un matériau sans données s'affiche avec des valeurs `—` et permet déjà la saisie via "+ Conso.".
+
+**Idem pour les filtres** : `/api/catalogue/search` et les selects de filtres n'affichent que les matériaux `active: true`, donc un nouveau matériau est visible partout instantanément.

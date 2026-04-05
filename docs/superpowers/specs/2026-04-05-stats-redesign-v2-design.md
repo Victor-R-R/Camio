@@ -68,26 +68,30 @@ Chaque `MateriauStats.color` et `CalendarEntry` partagent la même couleur par `
 
 ### `MateriauStats[]`
 
-Grouper les `StatsRow[]` existants par `materiauId` :
+**Tous les matériaux actifs** sont inclus, même ceux sans aucune donnée. Cela garantit qu'un nouveau matériau créé dans `/catalogue` apparaît immédiatement dans `/stats`.
 
 ```ts
+// 1. Initialiser depuis tous les matériaux actifs (ordre alphabétique = ordre palette stable)
 const matMap = new Map<string, MateriauStats>();
+for (const mat of materiaux) {
+  matMap.set(mat.id, {
+    materiauId: mat.id,
+    materiauDesignation: mat.designation,
+    unit: mat.defaultUnit,
+    alloue: null,
+    transporte: 0,
+    consomme: 0,
+    restant: null,
+    projectionSemaines: null,
+    chantierCount: 0,
+    color: PALETTE[matMap.size % PALETTE.length],
+  });
+}
+
+// 2. Agréger les statsRows
 for (const row of statsRows) {
-  if (!matMap.has(row.materiauId)) {
-    matMap.set(row.materiauId, {
-      materiauId: row.materiauId,
-      materiauDesignation: row.materiauDesignation,
-      unit: row.unit,
-      alloue: null,
-      transporte: 0,
-      consomme: 0,
-      restant: null,
-      projectionSemaines: null,
-      chantierCount: 0,
-      color: PALETTE[matMap.size % PALETTE.length],
-    });
-  }
-  const m = matMap.get(row.materiauId)!;
+  const m = matMap.get(row.materiauId);
+  if (!m) continue; // matériau inactif filtré
   m.transporte += row.transporte;
   m.consomme += row.consomme;
   m.chantierCount += 1;
@@ -98,7 +102,8 @@ for (const row of statsRows) {
     else m.projectionSemaines = Math.min(m.projectionSemaines, row.projectionSemaines);
   }
 }
-// restant après agrégation
+
+// 3. Calculer restant
 for (const m of matMap.values()) {
   m.restant = m.alloue !== null ? m.alloue - m.consomme : null;
 }
