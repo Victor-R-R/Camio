@@ -46,7 +46,11 @@ export default async function HistoryPage({
   const [lists, total] = await Promise.all([
     prisma.loadingList.findMany({
       where,
-      include: { chantier: true, chauffeur: true, _count: { select: { items: true } } },
+      include: {
+        chantier: true,
+        chauffeur: true,
+        items: { select: { checked: true } },
+      },
       orderBy: { date: "desc" },
       skip: (page - 1) * perPage,
       take: perPage,
@@ -78,7 +82,7 @@ export default async function HistoryPage({
               <th className="p-3 text-left">Date</th>
               <th className="p-3 text-left">Chantier</th>
               <th className="p-3 text-left">Chauffeur</th>
-              <th className="p-3 text-center">Articles</th>
+              <th className="p-3 text-center">Chargement</th>
               <th className="p-3 text-left">Statut</th>
               <th className="p-3 text-right">Actions</th>
             </tr>
@@ -91,7 +95,24 @@ export default async function HistoryPage({
                 </td>
                 <td className="p-3 font-medium">{list.chantier.name}</td>
                 <td className="p-3">{list.chauffeur.name}</td>
-                <td className="p-3 text-center">{list._count.items}</td>
+                <td className="p-3 text-center">
+                  {(() => {
+                    const total = list.items.length;
+                    const checked = list.items.filter((i) => i.checked).length;
+                    if (total === 0) return <span className="text-muted-foreground">—</span>;
+                    if (checked === total)
+                      return (
+                        <span className="inline-flex items-center gap-1 text-green-700 font-medium">
+                          <span>✓</span> {total}/{total}
+                        </span>
+                      );
+                    return (
+                      <span className="text-amber-600">
+                        {checked}/{total}
+                      </span>
+                    );
+                  })()}
+                </td>
                 <td className="p-3">
                   <Badge variant="outline">{STATUS_LABELS[list.status]}</Badge>
                 </td>

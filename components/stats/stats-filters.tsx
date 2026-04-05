@@ -15,7 +15,6 @@ type Props = {
   current: {
     chantierId?: string;
     materiauId?: string;
-    periode?: string;
   };
 };
 
@@ -30,8 +29,6 @@ export function StatsFilters({ chantiers, materiaux, current }: Props) {
       params.set("chantierId", merged.chantierId);
     if (merged.materiauId && merged.materiauId !== "all")
       params.set("materiauId", merged.materiauId);
-    if (merged.periode && merged.periode !== "all")
-      params.set("periode", merged.periode);
     const qs = params.toString();
     router.push(pathname + (qs ? `?${qs}` : ""));
   }
@@ -69,21 +66,6 @@ export function StatsFilters({ chantiers, materiaux, current }: Props) {
               {m.designation}
             </SelectItem>
           ))}
-        </SelectContent>
-      </Select>
-
-      <Select
-        value={current.periode ?? "all"}
-        onValueChange={(v) => update("periode", v)}
-      >
-        <SelectTrigger className="w-40">
-          <SelectValue placeholder="Tout" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">Tout</SelectItem>
-          <SelectItem value="month">Ce mois</SelectItem>
-          <SelectItem value="3months">3 mois</SelectItem>
-          <SelectItem value="6months">6 mois</SelectItem>
         </SelectContent>
       </Select>
     </div>

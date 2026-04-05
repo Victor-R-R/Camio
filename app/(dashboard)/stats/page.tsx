@@ -2,15 +2,25 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { ListStatus } from "@/lib/generated/prisma/enums";
-import type { StatsRow } from "@/lib/types";
+import type { StatsRow, MateriauStats, CalendarEntry } from "@/lib/types";
 import { StatsFilters } from "@/components/stats/stats-filters";
-import { StatsTable } from "@/components/stats/stats-table";
+import { KpiCards } from "@/components/stats/kpi-cards";
+import { MaterialCardList } from "@/components/stats/material-card-list";
+import { CalendarPanel } from "@/components/stats/calendar-panel";
 
 type SearchParams = Promise<{
   chantierId?: string;
   materiauId?: string;
-  periode?: string;
 }>;
+
+const PALETTE = [
+  "#f59e0b",
+  "#ef4444",
+  "#10b981",
+  "#8b5cf6",
+  "#3b82f6",
+  "#ec4899",
+];
 
 export default async function StatsPage({
   searchParams,
@@ -20,59 +30,65 @@ export default async function StatsPage({
   const session = await auth();
   if (!session) redirect("/login");
 
-  const { chantierId, materiauId, periode } = await searchParams;
+  const { chantierId, materiauId } = await searchParams;
 
-  // Compute date filter for period
+  // Always compute 4-week window for projection cadence
   const now = new Date();
-  let dateFrom: Date | undefined;
-  if (periode === "month")
-    dateFrom = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-  else if (periode === "3months")
-    dateFrom = new Date(now.getTime() - 90 * 24 * 60 * 60 * 1000);
-  else if (periode === "6months")
-    dateFrom = new Date(now.getTime() - 180 * 24 * 60 * 60 * 1000);
-
-  // Always compute 4-week window for projection cadence (independent of UI filter)
   const fourWeeksAgo = new Date(now.getTime() - 28 * 24 * 60 * 60 * 1000);
 
   const chantierWhere = chantierId ? { chantierId } : {};
   const materiauWhere = materiauId ? { materiauId } : {};
 
-  const [allocations, allConsommations, transportedItems, chantiers, materiaux] =
-    await Promise.all([
-      prisma.allocation.findMany({
-        where: { ...chantierWhere, ...materiauWhere },
-        include: { chantier: true, materiau: true },
-      }),
-      prisma.consommationEntry.findMany({
-        where: { ...chantierWhere, ...materiauWhere },
-        include: { chantier: true, materiau: true },
-      }),
-      prisma.loadingListItem.findMany({
-        where: {
-          materiauId: materiauId ? materiauId : { not: null },
-          list: {
-            status: ListStatus.DELIVERED,
-            ...chantierWhere,
-            ...(dateFrom ? { date: { gte: dateFrom } } : {}),
-          },
+  const [
+    allocations,
+    allConsommations,
+    transportedItems,
+    chantiers,
+    materiaux,
+    listsCreated,
+    listsDelivered,
+  ] = await Promise.all([
+    prisma.allocation.findMany({
+      where: { ...chantierWhere, ...materiauWhere },
+      include: { chantier: true, materiau: true },
+    }),
+    prisma.consommationEntry.findMany({
+      where: { ...chantierWhere, ...materiauWhere },
+      include: { chantier: true, materiau: true },
+    }),
+    prisma.loadingListItem.findMany({
+      where: {
+        materiauId: materiauId ? materiauId : { not: null },
+        list: {
+          status: ListStatus.DELIVERED,
+          ...chantierWhere,
         },
-        include: {
-          list: { include: { chantier: true } },
-          materiau: true,
-        },
-      }),
-      prisma.chantier.findMany({
-        where: { active: true },
-        orderBy: { name: "asc" },
-      }),
-      prisma.materiau.findMany({
-        where: { active: true },
-        orderBy: { designation: "asc" },
-      }),
-    ]);
+      },
+      include: {
+        list: { include: { chantier: true } },
+        materiau: true,
+      },
+    }),
+    prisma.chantier.findMany({
+      where: { active: true },
+      orderBy: { name: "asc" },
+    }),
+    prisma.materiau.findMany({
+      where: { active: true },
+      orderBy: { designation: "asc" },
+    }),
+    prisma.loadingList.count({
+      where: chantierId ? { chantierId } : {},
+    }),
+    prisma.loadingList.count({
+      where: {
+        status: ListStatus.DELIVERED,
+        ...(chantierId ? { chantierId } : {}),
+      },
+    }),
+  ]);
 
-  // Build rows map keyed by `chantierId|materiauId`
+  // ── Build StatsRow[] (per chantier × matériau) ──────────────────────
   type RowAccumulator = {
     chantierId: string;
     chantierName: string;
@@ -109,19 +125,17 @@ export default async function StatsPage({
     return rowsMap.get(key)!;
   }
 
-  // Populate from allocations
   for (const a of allocations) {
     const row = getOrCreate(
       a.chantierId,
       a.chantier.name,
       a.materiauId,
       a.materiau.designation,
-      a.unit
+      a.unit as string
     );
     row.alloue = a.quantity;
   }
 
-  // Populate from transported items
   for (const item of transportedItems) {
     if (!item.materiauId || !item.materiau) continue;
     const row = getOrCreate(
@@ -129,32 +143,31 @@ export default async function StatsPage({
       item.list.chantier.name,
       item.materiauId,
       item.materiau.designation,
-      item.unit
+      item.unit as string
     );
     row.transporte += item.quantity;
   }
 
-  // Populate from consommation entries
   for (const c of allConsommations) {
     const row = getOrCreate(
       c.chantierId,
       c.chantier.name,
       c.materiauId,
       c.materiau.designation,
-      c.unit
+      c.unit as string
     );
     row.consommeEntries.push({ date: c.date, quantity: c.quantity });
   }
 
-  // Compute final StatsRow[]
   const statsRows: StatsRow[] = Array.from(rowsMap.values())
     .map((row): StatsRow => {
-      // Period-filtered consommé
-      const consomme = row.consommeEntries
-        .filter((e) => !dateFrom || e.date >= dateFrom)
-        .reduce((sum, e) => sum + e.quantity, 0);
+      // All-time consommé (no period filter)
+      const consomme = row.consommeEntries.reduce(
+        (sum, e) => sum + e.quantity,
+        0
+      );
 
-      // 4-week cadence for projection (always based on last 4 weeks, ignores UI period filter)
+      // 4-week cadence for projection (always based on last 4 weeks)
       const last4wTotal = row.consommeEntries
         .filter((e) => e.date >= fourWeeksAgo)
         .reduce((sum, e) => sum + e.quantity, 0);
@@ -170,7 +183,6 @@ export default async function StatsPage({
         } else if (cadenceHebdo > 0) {
           projectionSemaines = restant / cadenceHebdo;
         }
-        // cadenceHebdo === 0 → projectionSemaines stays null (rendered as ∞)
       }
 
       return {
@@ -192,15 +204,113 @@ export default async function StatsPage({
         a.materiauDesignation.localeCompare(b.materiauDesignation)
     );
 
+  // ── Build MateriauStats[] (all active materials, seeded from materiaux) ─
+  const matMap = new Map<string, MateriauStats>();
+  let paletteIdx = 0;
+  for (const mat of materiaux) {
+    matMap.set(mat.id, {
+      materiauId: mat.id,
+      materiauDesignation: mat.designation,
+      unit: mat.defaultUnit as string,
+      alloue: null,
+      transporte: 0,
+      consomme: 0,
+      restant: null,
+      projectionSemaines: null,
+      chantierCount: 0,
+      color: PALETTE[paletteIdx++ % PALETTE.length],
+    });
+  }
+
+  for (const row of statsRows) {
+    const m = matMap.get(row.materiauId);
+    if (!m) continue;
+    m.transporte += row.transporte;
+    m.consomme += row.consomme;
+    m.chantierCount += 1;
+    if (row.alloue !== null) m.alloue = (m.alloue ?? 0) + row.alloue;
+    if (row.projectionSemaines !== null) {
+      if (m.projectionSemaines === null)
+        m.projectionSemaines = row.projectionSemaines;
+      else
+        m.projectionSemaines = Math.min(
+          m.projectionSemaines,
+          row.projectionSemaines
+        );
+    }
+  }
+
+  for (const m of matMap.values()) {
+    m.restant = m.alloue !== null ? m.alloue - m.consomme : null;
+  }
+
+  const materiauStats = [...matMap.values()];
+
+  // ── KPI counts ────────────────────────────────────────────────────────
+  const criticalCount = materiauStats.filter(
+    (m) => m.alloue && m.alloue > 0 && (m.consomme / m.alloue) * 100 >= 90
+  ).length;
+  const trackedCount = materiauStats.filter((m) => m.alloue !== null).length;
+
+  // ── colorMap for CalendarPanel ────────────────────────────────────────
+  const colorMap: Record<string, string> = {};
+  for (const m of materiauStats) colorMap[m.materiauId] = m.color;
+
+  // ── CalendarEntry[] ───────────────────────────────────────────────────
+  const calendarEntries: CalendarEntry[] = [
+    ...allConsommations.map((c) => ({
+      date: c.date.toISOString().split("T")[0],
+      materiauId: c.materiauId,
+      materiauDesignation: c.materiau.designation,
+      chantierId: c.chantierId,
+      chantierName: c.chantier.name,
+      quantity: c.quantity,
+      unit: c.unit as string,
+      source: "Manuel" as const,
+    })),
+    ...transportedItems
+      .filter((item) => item.materiauId && item.materiau)
+      .map((item) => ({
+        date: item.list.date.toISOString().split("T")[0],
+        materiauId: item.materiauId!,
+        materiauDesignation: item.materiau!.designation,
+        chantierId: item.list.chantierId,
+        chantierName: item.list.chantier.name,
+        quantity: item.quantity,
+        unit: item.unit as string,
+        source: "Bon" as const,
+      })),
+  ];
+
+  // ── materiauOptions for component props ──────────────────────────────
+  const materiauOptions = materiaux.map((m) => ({
+    id: m.id,
+    designation: m.designation,
+    unit: m.defaultUnit as string,
+  }));
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <h1 className="text-2xl font-bold text-[#3D4A5C]">Statistiques</h1>
       <StatsFilters
         chantiers={chantiers}
         materiaux={materiaux}
-        current={{ chantierId, materiauId, periode }}
+        current={{ chantierId, materiauId }}
       />
-      <StatsTable statsRows={statsRows} />
+      <KpiCards
+        listsCreated={listsCreated}
+        listsDelivered={listsDelivered}
+        criticalCount={criticalCount}
+        trackedCount={trackedCount}
+      />
+      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4 items-start">
+        <MaterialCardList
+          materiauStats={materiauStats}
+          chantiers={chantiers}
+          materiaux={materiauOptions}
+        />
+        <CalendarPanel entries={calendarEntries} colorMap={colorMap} />
+      </div>
     </div>
   );
 }

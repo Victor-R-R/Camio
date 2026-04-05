@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { createConsommationEntry } from "@/lib/actions/stats";
 
+type ChantierOption = { id: string; name: string };
 type MateriauOption = {
   id: string;
   designation: string;
@@ -26,24 +27,28 @@ type MateriauOption = {
 };
 
 type Props = {
-  chantierId: string;
-  chantierName: string;
+  chantiers: ChantierOption[];
+  defaultChantierId?: string;
   materiaux: MateriauOption[];
+  defaultMateriauId?: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
 };
 
 export function ConsommationForm({
-  chantierId,
-  chantierName,
+  chantiers,
+  defaultChantierId,
   materiaux,
+  defaultMateriauId,
   open,
   onOpenChange,
 }: Props) {
-  // Component unmounts between opens (parent uses conditional render),
-  // so this initializer always runs fresh.
+  // Component unmounts between opens (parent uses conditional render), so initializers run fresh.
+  const [selectedChantierId, setSelectedChantierId] = useState(
+    defaultChantierId ?? chantiers[0]?.id ?? ""
+  );
   const [selectedMateriauId, setSelectedMateriauId] = useState(
-    materiaux[0]?.id ?? ""
+    defaultMateriauId ?? materiaux[0]?.id ?? ""
   );
   const [quantity, setQuantity] = useState("");
   const [date, setDate] = useState(
@@ -58,10 +63,10 @@ export function ConsommationForm({
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     const qty = parseFloat(quantity);
-    if (isNaN(qty) || qty <= 0 || !selectedMateriauId) return;
+    if (isNaN(qty) || qty <= 0 || !selectedChantierId || !selectedMateriauId) return;
     startTransition(async () => {
       await createConsommationEntry({
-        chantierId,
+        chantierId: selectedChantierId,
         materiauId: selectedMateriauId,
         quantity: qty,
         unit,
@@ -77,9 +82,27 @@ export function ConsommationForm({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Saisir consommation</DialogTitle>
-          <p className="text-sm text-muted-foreground">{chantierName}</p>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+          <div className="space-y-1">
+            <Label htmlFor="conso-chantier">Chantier</Label>
+            <Select
+              value={selectedChantierId}
+              onValueChange={setSelectedChantierId}
+            >
+              <SelectTrigger id="conso-chantier">
+                <SelectValue placeholder="Choisir un chantier" />
+              </SelectTrigger>
+              <SelectContent>
+                {chantiers.map((c) => (
+                  <SelectItem key={c.id} value={c.id}>
+                    {c.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-1">
             <Label htmlFor="conso-materiau">Matériau</Label>
             <Select
@@ -98,6 +121,7 @@ export function ConsommationForm({
               </SelectContent>
             </Select>
           </div>
+
           <div className="space-y-1">
             <Label htmlFor="conso-qty">
               Quantité{unit ? ` (${unit})` : ""}
@@ -112,6 +136,7 @@ export function ConsommationForm({
               required
             />
           </div>
+
           <div className="space-y-1">
             <Label htmlFor="conso-date">Date</Label>
             <Input
@@ -122,6 +147,7 @@ export function ConsommationForm({
               required
             />
           </div>
+
           <div className="space-y-1">
             <Label htmlFor="conso-notes">Notes (optionnel)</Label>
             <Input
@@ -130,6 +156,7 @@ export function ConsommationForm({
               onChange={(e) => setNotes(e.target.value)}
             />
           </div>
+
           <div className="flex gap-2 justify-end pt-2">
             <Button
               type="button"
@@ -138,7 +165,10 @@ export function ConsommationForm({
             >
               Annuler
             </Button>
-            <Button type="submit" disabled={isPending || !selectedMateriauId}>
+            <Button
+              type="submit"
+              disabled={isPending || !selectedChantierId || !selectedMateriauId}
+            >
               {isPending ? "Enregistrement..." : "Enregistrer"}
             </Button>
           </div>
