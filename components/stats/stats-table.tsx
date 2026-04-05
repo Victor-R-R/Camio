@@ -31,8 +31,8 @@ export function StatsTable({ statsRows }: { statsRows: StatsRow[] }) {
 
   return (
     <>
-      <div className="rounded-md border overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="rounded-md border overflow-x-auto">
+        <table className="w-full text-sm min-w-[700px]">
           <thead>
             <tr className="bg-muted/50 border-b">
               <th className="text-left px-4 py-3 font-medium text-muted-foreground">

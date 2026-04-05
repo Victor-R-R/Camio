@@ -22,6 +22,7 @@ Application Next.js 16 (App Router, React 19) de gestion des listes de chargemen
 - Server Actions dans `lib/actions/` — pas de Route Handlers pour les mutations
 - Composants Server par défaut, `'use client'` seulement si nécessaire
 - shadcn/ui + Tailwind CSS v4 — ne pas construire de contrôles depuis du HTML brut
+- **Tables responsives** : toujours envelopper `<table>` dans `<div className="overflow-x-auto">` et ajouter `min-w-[...]` sur la table pour garantir le scroll horizontal sur mobile/tablette
 - Prisma 7 via `lib/prisma.ts`
 - Auth via `lib/auth.ts` (NextAuth v5)
 
