@@ -1,0 +1,62 @@
+<h2>Architecture — 3 approches possibles</h2>
+<p class="subtitle">Même stack (Next.js 15 + Prisma + Supabase), différences dans l'organisation du code</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A ⭐</div>
+    <div class="content">
+      <h3>Next.js monolithique — App Router + Server Actions</h3>
+      <p>Tout dans une seule app Next.js. Les mutations (créer liste, cocher item) passent par des Server Actions. Les routes API sont réservées aux webhooks et au lien public magasinier.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Pourquoi c'est le bon choix</h4><ul>
+          <li>Zéro over-engineering pour une app mono-entreprise</li>
+          <li>Server Actions = typage end-to-end, pas de fetch/JSON à la main</li>
+          <li>Déploiement Vercel zero-config</li>
+          <li>Codebase compact, maintenable par une personne</li>
+        </ul></div>
+        <div class="cons"><h4>Limites</h4><ul>
+          <li>Si besoin d'une API mobile native plus tard, il faudra ajouter des Route Handlers</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>Next.js + API REST séparée (Route Handlers uniquement)</h3>
+      <p>Toutes les mutations passent par des endpoints REST (/api/lists, /api/items, etc.). Le frontend utilise fetch() ou SWR pour tout.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Avantages</h4><ul>
+          <li>API réutilisable si application mobile future</li>
+          <li>Séparation claire frontend/backend</li>
+        </ul></div>
+        <div class="cons"><h4>Limites</h4><ul>
+          <li>Beaucoup plus de boilerplate (validation, sérialisation, fetch)</li>
+          <li>Inutile pour un usage mono-équipe sans app mobile prévue</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Next.js + tRPC</h3>
+      <p>API typée end-to-end via tRPC. Idéal pour les grosses équipes ou apps complexes.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Avantages</h4><ul>
+          <li>Typage parfait client-serveur</li>
+          <li>DX excellent pour les grosses équipes</li>
+        </ul></div>
+        <div class="cons"><h4>Limites</h4><ul>
+          <li>Overkill pour cette taille d'app</li>
+          <li>Courbe d'apprentissage, configuration initiale lourde</li>
+          <li>Ajoute une dépendance majeure inutile ici</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 1.5rem;">💡 <strong>Recommandation : Option A</strong> — Server Actions pour les mutations, Route Handlers uniquement pour le lien public magasinier (<code>/api/check/[token]</code>) et l'upload logo.</p>

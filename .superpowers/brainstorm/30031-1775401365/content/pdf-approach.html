@@ -1,0 +1,67 @@
+<h2>Génération des 3 bons PDF — quelle approche ?</h2>
+<p class="subtitle">Ce choix impacte l'architecture, la qualité des PDFs et la complexité de déploiement</p>
+
+<div class="options">
+  <div class="option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="letter">A</div>
+    <div class="content">
+      <h3>CSS @media print + window.print()</h3>
+      <p>Les 3 bons sont des composants React mis en forme avec du CSS print. L'utilisateur clique "Imprimer" et le navigateur génère le PDF via la boîte de dialogue standard.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Avantages</h4><ul>
+          <li>Zéro dépendance externe</li>
+          <li>Rendu fidèle au HTML</li>
+          <li>Marche sur mobile (tablette magasinier)</li>
+          <li>CSS déjà prévu dans le cahier des charges</li>
+        </ul></div>
+        <div class="cons"><h4>Limites</h4><ul>
+          <li>Pas de téléchargement direct .pdf</li>
+          <li>Mise en page dépend du navigateur</li>
+          <li>Moins de contrôle sur les sauts de page</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="letter">B</div>
+    <div class="content">
+      <h3>react-pdf (client-side)</h3>
+      <p>Les bons sont définis en JSX React-PDF, générés côté client comme de vrais fichiers PDF téléchargeables.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Avantages</h4><ul>
+          <li>Téléchargement .pdf direct</li>
+          <li>Contrôle précis de la mise en page</li>
+          <li>Portable, sans dépendance serveur</li>
+        </ul></div>
+        <div class="cons"><h4>Limites</h4><ul>
+          <li>API différente du HTML/CSS (apprendre)</li>
+          <li>Rendu légèrement différent du HTML</li>
+          <li>Bundle JS plus lourd (~300KB)</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="letter">C</div>
+    <div class="content">
+      <h3>Puppeteer / Playwright (server-side)</h3>
+      <p>Un endpoint API génère le PDF côté serveur en rendant la page HTML dans un navigateur headless.</p>
+      <div class="pros-cons">
+        <div class="pros"><h4>Avantages</h4><ul>
+          <li>Rendu pixel-perfect identique au HTML</li>
+          <li>PDF téléchargeable + envoyable par email</li>
+          <li>Indépendant du navigateur client</li>
+        </ul></div>
+        <div class="cons"><h4>Limites</h4><ul>
+          <li>Complexe à déployer sur Vercel (taille image)</li>
+          <li>Coût en temps d'exécution (serverless)</li>
+          <li>Peut nécessiter un service externe (Browserless)</li>
+        </ul></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<p class="subtitle" style="margin-top: 1.5rem;">💡 Ma recommandation : <strong>Option A (CSS print)</strong> — tu as déjà prévu le CSS @media print dans ton cahier des charges, c'est le plus simple et parfaitement adapté à l'usage (impression bureau). On peut ajouter un bouton "Sauvegarder PDF" avec react-to-print si besoin.</p>

@@ -1,0 +1,123 @@
+<h2>Design — Architecture & flux de données</h2>
+<p class="subtitle">Next.js 15 App Router · Server Actions · Prisma + Supabase · NextAuth.js · CSS print</p>
+
+<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-top: 1rem;">
+
+  <!-- Modèle de données -->
+  <div class="mockup">
+    <div class="mockup-header">Modèle Prisma (schéma simplifié)</div>
+    <div class="mockup-body" style="padding:1rem;font-size:11px;font-family:monospace;line-height:1.6;">
+      <div style="color:#6B7280;margin-bottom:8px;">// 7 modèles · relations clés</div>
+      <div><span style="color:#059669;">User</span> <span style="color:#6B7280;">(id, name, email, passwordHash, role)</span></div>
+      <div style="margin-left:12px;color:#6B7280;">role: BUREAU | ADMIN</div>
+      <br/>
+      <div><span style="color:#3B82F6;">Chantier</span> <span style="color:#6B7280;">(id, name, address, active)</span></div>
+      <div><span style="color:#3B82F6;">Chauffeur</span> <span style="color:#6B7280;">(id, name, phone, active)</span></div>
+      <div><span style="color:#3B82F6;">Materiau</span> <span style="color:#6B7280;">(id, designation, defaultUnit)</span></div>
+      <br/>
+      <div><span style="color:#E07B3A;">LoadingList</span> <span style="color:#6B7280;">(id, date, departureTime,</span></div>
+      <div style="margin-left:12px;color:#6B7280;">chantierId, chauffeurId, responsable,</div>
+      <div style="margin-left:12px;color:#6B7280;">notes, status, shareToken, createdAt)</div>
+      <div style="margin-left:12px;color:#9CA3AF;">status: DRAFT|GENERATED|LOADED|DELIVERED</div>
+      <div style="margin-left:12px;color:#9CA3AF;">shareToken: uuid unique → lien magasinier</div>
+      <br/>
+      <div><span style="color:#E07B3A;">LoadingListItem</span> <span style="color:#6B7280;">(id, listId,</span></div>
+      <div style="margin-left:12px;color:#6B7280;">materiauId?, designation, quantity,</div>
+      <div style="margin-left:12px;color:#6B7280;">unit, order, checked)</div>
+      <br/>
+      <div><span style="color:#8B5CF6;">CompanySettings</span> <span style="color:#6B7280;">(id, name, logoUrl,</span></div>
+      <div style="margin-left:12px;color:#6B7280;">address, phone)</div>
+      <div style="margin-left:12px;color:#9CA3AF;">// singleton — une seule ligne</div>
+    </div>
+  </div>
+
+  <!-- Flux principaux -->
+  <div class="mockup">
+    <div class="mockup-header">Flux principaux</div>
+    <div class="mockup-body" style="padding:1rem;font-size:11px;">
+
+      <div style="margin-bottom:14px;">
+        <div style="font-weight:600;color:#3D4A5C;margin-bottom:6px;">📝 Création d'une liste</div>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <div style="background:#F1F5F9;padding:5px 8px;border-radius:4px;">1. Formulaire → Server Action <code>createList()</code></div>
+          <div style="text-align:center;color:#9CA3AF;font-size:10px;">↓</div>
+          <div style="background:#F1F5F9;padding:5px 8px;border-radius:4px;">2. Prisma insert → <code>shareToken</code> uuid généré</div>
+          <div style="text-align:center;color:#9CA3AF;font-size:10px;">↓</div>
+          <div style="background:#F1F5F9;padding:5px 8px;border-radius:4px;">3. Status → GENERATED · redirect vers aperçu</div>
+          <div style="text-align:center;color:#9CA3AF;font-size:10px;">↓</div>
+          <div style="background:#FFF7F0;border:1px solid #FED7AA;padding:5px 8px;border-radius:4px;">4. Aperçu 3 bons → bouton Imprimer (window.print)</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px;">
+        <div style="font-weight:600;color:#3D4A5C;margin-bottom:6px;">📱 Fiche magasinier (lien public)</div>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <div style="background:#F1F5F9;padding:5px 8px;border-radius:4px;">Route publique <code>/check/[token]</code></div>
+          <div style="text-align:center;color:#9CA3AF;font-size:10px;">↓</div>
+          <div style="background:#F1F5F9;padding:5px 8px;border-radius:4px;">Lookup token → affiche items (Server Component)</div>
+          <div style="text-align:center;color:#9CA3AF;font-size:10px;">↓</div>
+          <div style="background:#F1F5F9;padding:5px 8px;border-radius:4px;">Coche item → Server Action <code>toggleItem()</code></div>
+          <div style="text-align:center;color:#9CA3AF;font-size:10px;">↓</div>
+          <div style="background:#D1FAE5;border:1px solid #6EE7B7;padding:5px 8px;border-radius:4px;">Revalidate path → mise à jour UI instantanée</div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-weight:600;color:#3D4A5C;margin-bottom:6px;">⚙️ Upload logo entreprise</div>
+        <div style="display:flex;flex-direction:column;gap:3px;">
+          <div style="background:#F1F5F9;padding:5px 8px;border-radius:4px;">File input → Route Handler <code>POST /api/upload</code></div>
+          <div style="text-align:center;color:#9CA3AF;font-size:10px;">↓</div>
+          <div style="background:#F1F5F9;padding:5px 8px;border-radius:4px;">Vercel Blob → URL stockée dans CompanySettings</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Structure fichiers -->
+  <div class="mockup" style="grid-column: 1 / -1;">
+    <div class="mockup-header">Structure des fichiers</div>
+    <div class="mockup-body" style="padding:1rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;font-size:11px;font-family:monospace;line-height:1.8;">
+      <div>
+        <div style="color:#E07B3A;font-weight:600;">app/</div>
+        <div style="margin-left:12px;color:#6B7280;">(auth)/login/page.tsx</div>
+        <div style="margin-left:12px;color:#3D4A5C;">(dashboard)/layout.tsx</div>
+        <div style="margin-left:24px;color:#3D4A5C;">lists/new/page.tsx</div>
+        <div style="margin-left:24px;color:#3D4A5C;">lists/[id]/page.tsx</div>
+        <div style="margin-left:24px;color:#3D4A5C;">lists/[id]/print/page.tsx</div>
+        <div style="margin-left:24px;color:#3D4A5C;">history/page.tsx</div>
+        <div style="margin-left:24px;color:#3D4A5C;">catalogue/page.tsx</div>
+        <div style="margin-left:24px;color:#3D4A5C;">settings/page.tsx</div>
+        <div style="margin-left:12px;color:#3D4A5C;">check/[token]/page.tsx</div>
+        <div style="margin-left:12px;color:#6B7280;">api/upload/route.ts</div>
+      </div>
+      <div>
+        <div style="color:#3B82F6;font-weight:600;">components/</div>
+        <div style="margin-left:12px;color:#3D4A5C;">ui/ (shadcn)</div>
+        <div style="margin-left:12px;color:#3D4A5C;">layout/Sidebar.tsx</div>
+        <div style="margin-left:12px;color:#3D4A5C;">lists/ListForm.tsx</div>
+        <div style="margin-left:12px;color:#3D4A5C;">lists/ItemsTable.tsx</div>
+        <div style="margin-left:12px;color:#3D4A5C;">lists/CatalogSearch.tsx</div>
+        <div style="margin-left:12px;color:#3D4A5C;">documents/BonTransport.tsx</div>
+        <div style="margin-left:12px;color:#3D4A5C;">documents/FicheChargement.tsx</div>
+        <div style="margin-left:12px;color:#3D4A5C;">documents/BonSuivi.tsx</div>
+        <div style="margin-left:12px;color:#3D4A5C;">check/ChecklistView.tsx</div>
+      </div>
+      <div>
+        <div style="color:#059669;font-weight:600;">lib/ & autres</div>
+        <div style="margin-left:12px;color:#3D4A5C;">lib/prisma.ts</div>
+        <div style="margin-left:12px;color:#3D4A5C;">lib/auth.ts</div>
+        <div style="margin-left:12px;color:#3D4A5C;">lib/actions/</div>
+        <div style="margin-left:24px;color:#6B7280;">lists.ts</div>
+        <div style="margin-left:24px;color:#6B7280;">catalogue.ts</div>
+        <div style="margin-left:24px;color:#6B7280;">settings.ts</div>
+        <div style="margin-left:12px;color:#3D4A5C;">prisma/</div>
+        <div style="margin-left:24px;color:#6B7280;">schema.prisma</div>
+        <div style="margin-left:24px;color:#6B7280;">seed.ts</div>
+        <div style="margin-left:12px;color:#6B7280;">.env.local.example</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<p class="subtitle" style="margin-top:1rem;">Architecture OK ? Si oui, je rédige le document de spec complet.</p>

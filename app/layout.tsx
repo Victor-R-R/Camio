@@ -13,7 +13,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CamioLoad",
+  title: "Camio",
   description: "Gestion des listes de chargement",
 };
 
