@@ -121,6 +121,7 @@ export function StatsTable({ statsRows }: { statsRows: StatsRow[] }) {
 
               // Aggregate totals for the group header
               const hasAnyAlloc = rows.some((r) => r.alloue !== null);
+              // Raw sums — may mix units. Use only when singleUnit !== null (see below).
               const totalAlloue = hasAnyAlloc
                 ? rows.reduce((s, r) => s + (r.alloue ?? 0), 0)
                 : null;

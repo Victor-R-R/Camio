@@ -69,9 +69,6 @@ export function ConsommationForm({
         notes: notes || null,
       });
       onOpenChange(false);
-      setQuantity("");
-      setNotes("");
-      setSelectedMateriauId(materiaux[0]?.id ?? "");
     });
   }
 
