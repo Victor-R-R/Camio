@@ -128,3 +128,26 @@
     @apply font-sans;
   }
 }
+
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #print-area,
+  #print-area * {
+    visibility: visible;
+  }
+  #print-area {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+  }
+  .page-break {
+    page-break-after: always;
+  }
+  @page {
+    size: A4;
+    margin: 15mm;
+  }
+}
