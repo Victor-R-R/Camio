@@ -26,6 +26,13 @@ export async function createChauffeur(data: { name: string; phone?: string }) {
   revalidatePath("/catalogue");
 }
 
+export async function createChauffeurInline(data: { name: string; phone?: string }) {
+  const chauffeur = await prisma.chauffeur.create({ data });
+  revalidatePath("/catalogue");
+  revalidatePath("/lists/new");
+  return chauffeur;
+}
+
 export async function updateChauffeur(id: string, data: { name: string; phone?: string }) {
   await prisma.chauffeur.update({ where: { id }, data });
   revalidatePath("/catalogue");

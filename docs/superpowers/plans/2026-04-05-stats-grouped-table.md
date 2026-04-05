@@ -1,6 +1,218 @@
+# Stats — Table groupée par chantier Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Restructurer la page `/stats` pour afficher une ligne de groupe par chantier avec donut consommé/restant, des sous-lignes par matériau, et le bouton "+ Conso." au niveau chantier avec picker matériau.
+
+**Architecture:** Tout le travail est côté client dans `components/stats/`. La logique de groupement se fait dans `StatsTable` à partir du `StatsRow[]` existant (aucun changement serveur). `ConsommationForm` est modifié pour recevoir une liste de matériaux à la place d'un matériau fixe.
+
+**Tech Stack:** React 19, shadcn/ui (Dialog, Select, Button, Label, Input, Badge), Tailwind CSS v4, SVG inline pour le donut.
+
+---
+
+## Fichiers modifiés
+
+| Fichier | Rôle |
+|---|---|
+| `components/stats/consommation-form.tsx` | Remplace les props matériau fixes par `materiaux[]` + picker Select |
+| `components/stats/stats-table.tsx` | Groupement par chantier, ligne header + donut, sous-lignes, nouveau formTarget |
+
+Aucun autre fichier ne change.
+
+---
+
+### Task 1 : Modifier `ConsommationForm` — picker matériau dynamique
+
+**Files:**
+- Modify: `components/stats/consommation-form.tsx`
+
+- [ ] **Step 1 : Remplacer le composant entier par la version avec picker**
+
+Remplacer le contenu de `components/stats/consommation-form.tsx` par :
+
+```tsx
 "use client";
 
-import React from "react";
+import { useState, useTransition } from "react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { createConsommationEntry } from "@/lib/actions/stats";
+
+type MateriauOption = {
+  id: string;
+  designation: string;
+  unit: string;
+};
+
+type Props = {
+  chantierId: string;
+  chantierName: string;
+  materiaux: MateriauOption[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
+
+export function ConsommationForm({
+  chantierId,
+  chantierName,
+  materiaux,
+  open,
+  onOpenChange,
+}: Props) {
+  const [selectedMateriauId, setSelectedMateriauId] = useState(
+    materiaux[0]?.id ?? ""
+  );
+  const [quantity, setQuantity] = useState("");
+  const [date, setDate] = useState(
+    () => new Date().toISOString().split("T")[0]
+  );
+  const [notes, setNotes] = useState("");
+  const [isPending, startTransition] = useTransition();
+
+  const selectedMateriau = materiaux.find((m) => m.id === selectedMateriauId);
+  const unit = selectedMateriau?.unit ?? "";
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    const qty = parseFloat(quantity);
+    if (isNaN(qty) || qty <= 0 || !selectedMateriauId) return;
+    startTransition(async () => {
+      await createConsommationEntry({
+        chantierId,
+        materiauId: selectedMateriauId,
+        quantity: qty,
+        unit,
+        date,
+        notes: notes || null,
+      });
+      onOpenChange(false);
+      setQuantity("");
+      setNotes("");
+      setSelectedMateriauId(materiaux[0]?.id ?? "");
+    });
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Saisir consommation</DialogTitle>
+          <p className="text-sm text-muted-foreground">{chantierName}</p>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 mt-2">
+          <div className="space-y-1">
+            <Label htmlFor="conso-materiau">Matériau</Label>
+            <Select
+              value={selectedMateriauId}
+              onValueChange={setSelectedMateriauId}
+            >
+              <SelectTrigger id="conso-materiau">
+                <SelectValue placeholder="Choisir un matériau" />
+              </SelectTrigger>
+              <SelectContent>
+                {materiaux.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.designation}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="conso-qty">
+              Quantité{unit ? ` (${unit})` : ""}
+            </Label>
+            <Input
+              id="conso-qty"
+              type="number"
+              min={0}
+              step={0.01}
+              value={quantity}
+              onChange={(e) => setQuantity(e.target.value)}
+              required
+              autoFocus
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="conso-date">Date</Label>
+            <Input
+              id="conso-date"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-1">
+            <Label htmlFor="conso-notes">Notes (optionnel)</Label>
+            <Input
+              id="conso-notes"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+            />
+          </div>
+          <div className="flex gap-2 justify-end pt-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => onOpenChange(false)}
+            >
+              Annuler
+            </Button>
+            <Button type="submit" disabled={isPending || !selectedMateriauId}>
+              {isPending ? "Enregistrement..." : "Enregistrer"}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+```
+
+- [ ] **Step 2 : Vérifier TypeScript**
+
+```bash
+cd /Users/victorrubia/Camio && npx tsc --noEmit 2>&1 | head -30
+```
+
+Attendu : erreurs uniquement sur `stats-table.tsx` (qui appelle encore l'ancienne API de `ConsommationForm`). Pas d'erreur dans `consommation-form.tsx`.
+
+- [ ] **Step 3 : Commit**
+
+```bash
+git add components/stats/consommation-form.tsx
+git commit -m "feat: add materiau picker to ConsommationForm"
+```
+
+---
+
+### Task 2 : Refactoriser `StatsTable` — groupement, donut, sous-lignes
+
+**Files:**
+- Modify: `components/stats/stats-table.tsx`
+
+- [ ] **Step 1 : Remplacer le composant entier**
+
+Remplacer le contenu de `components/stats/stats-table.tsx` par :
+
+```tsx
+"use client";
+
 import { useState } from "react";
 import type { StatsRow } from "@/lib/types";
 import { AllocationCell } from "./allocation-cell";
@@ -8,6 +220,7 @@ import { ConsommationForm } from "./consommation-form";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Plus } from "lucide-react";
+import React from "react";
 import { cn } from "@/lib/utils";
 
 type FormTarget = {
@@ -121,7 +334,6 @@ export function StatsTable({ statsRows }: { statsRows: StatsRow[] }) {
 
               // Aggregate totals for the group header
               const hasAnyAlloc = rows.some((r) => r.alloue !== null);
-              // Raw sums — may mix units. Use only when singleUnit !== null (see below).
               const totalAlloue = hasAnyAlloc
                 ? rows.reduce((s, r) => s + (r.alloue ?? 0), 0)
                 : null;
@@ -129,13 +341,8 @@ export function StatsTable({ statsRows }: { statsRows: StatsRow[] }) {
               const totalTransporte = rows.reduce((s, r) => s + r.transporte, 0);
               const totalRestant =
                 totalAlloue !== null ? totalAlloue - totalConsomme : null;
-
-              // Only compute meaningful aggregates when all materials share the same unit
-              const units = [...new Set(rows.map((r) => r.unit))];
-              const singleUnit = units.length === 1 ? units[0] : null;
-
               const pct =
-                singleUnit && totalAlloue && totalAlloue > 0
+                totalAlloue && totalAlloue > 0
                   ? (totalConsomme / totalAlloue) * 100
                   : null;
 
@@ -166,7 +373,9 @@ export function StatsTable({ statsRows }: { statsRows: StatsRow[] }) {
               return (
                 <React.Fragment key={chantierId}>
                   {/* Group header row */}
-                  <tr className="border-t bg-blue-50/60">
+                  <tr
+                    className="border-t bg-blue-50/60"
+                  >
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <ChantierDonut pct={pct} />
@@ -174,32 +383,32 @@ export function StatsTable({ statsRows }: { statsRows: StatsRow[] }) {
                           <div className="font-semibold text-blue-900">
                             {chantierName}
                           </div>
-                          {pct !== null && singleUnit && (
+                          {pct !== null && (
                             <div className="text-xs text-muted-foreground">
-                              {totalConsomme} {singleUnit} consommé · {totalRestant} {singleUnit} restant
+                              {totalConsomme} consommé · {totalRestant} restant
                             </div>
                           )}
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right text-muted-foreground text-xs">
-                      {totalAlloue !== null && singleUnit ? `${totalAlloue} ${singleUnit}` : "—"}
+                      {totalAlloue !== null ? `${totalAlloue}` : "—"}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">
-                      {totalTransporte > 0 && singleUnit ? `${totalTransporte} ${singleUnit}` : "—"}
+                      {totalTransporte > 0 ? totalTransporte : "—"}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums font-semibold">
-                      {totalConsomme > 0 && singleUnit ? `${totalConsomme} ${singleUnit}` : "—"}
+                      {totalConsomme > 0 ? totalConsomme : "—"}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">
-                      {totalRestant === null || !singleUnit ? (
+                      {totalRestant === null ? (
                         "—"
                       ) : totalRestant <= 0 ? (
                         <span className="text-red-600 font-medium">
-                          {totalRestant} {singleUnit}
+                          {totalRestant}
                         </span>
                       ) : (
-                        `${totalRestant} ${singleUnit}`
+                        totalRestant
                       )}
                     </td>
                     <td className="px-4 py-3">
@@ -338,3 +547,32 @@ function ProjectionBadge({ value }: { value: number | null }) {
     );
   return <span className="tabular-nums">{value.toFixed(1)} sem.</span>;
 }
+```
+
+- [ ] **Step 2 : Vérifier TypeScript — aucune erreur attendue**
+
+```bash
+cd /Users/victorrubia/Camio && npx tsc --noEmit 2>&1 | head -30
+```
+
+Attendu : aucune erreur.
+
+- [ ] **Step 3 : Démarrer le dev server et vérifier visuellement**
+
+```bash
+cd /Users/victorrubia/Camio && npm run dev
+```
+
+Ouvrir http://localhost:3000/stats et vérifier :
+- Une ligne de groupe bleue par chantier avec donut
+- Sous-lignes indentées par matériau avec barres de progression
+- Bouton "+ Conso." sur la ligne chantier uniquement
+- Dialog avec dropdown matériau, quantité (unité dynamique), date
+- Soumission du dialog → fermeture + données rafraîchies
+
+- [ ] **Step 4 : Commit**
+
+```bash
+git add components/stats/stats-table.tsx
+git commit -m "feat: group stats by chantier with donut and materiau picker"
+```
