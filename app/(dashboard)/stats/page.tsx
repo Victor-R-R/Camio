@@ -206,6 +206,7 @@ export default async function StatsPage({
 
   // ── Build MateriauStats[] (all active materials, seeded from materiaux) ─
   const matMap = new Map<string, MateriauStats>();
+  let paletteIdx = 0;
   for (const mat of materiaux) {
     matMap.set(mat.id, {
       materiauId: mat.id,
@@ -217,7 +218,7 @@ export default async function StatsPage({
       restant: null,
       projectionSemaines: null,
       chantierCount: 0,
-      color: PALETTE[matMap.size % PALETTE.length],
+      color: PALETTE[paletteIdx++ % PALETTE.length],
     });
   }
 
