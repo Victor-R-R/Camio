@@ -2,7 +2,7 @@
 
 Application web interne de gestion des listes de chargement pour entreprises du BTP.
 
-Camio permet au bureau de préparer les chargements, de générer 3 documents imprimables, et au chauffeur de pointer les articles depuis son téléphone via un lien de partage.
+Camio permet au bureau de préparer les chargements, de générer 3 documents imprimables, et au chauffeur de pointer les articles depuis son téléphone via un lien de partage. Elle intègre également un module de suivi de consommation et de prévision par chantier.
 
 ---
 
@@ -28,6 +28,14 @@ Chaque document porte un numéro de bon automatique (ex. `2026-0042`) basé sur 
 
 ### Checklist mobile (sans authentification)
 Chaque liste dispose d'un lien de partage unique (`/check/<token>`). Le chauffeur ou le magasinier peut cocher les articles depuis son téléphone sans avoir de compte.
+
+### Statistiques & Consommation
+Module de suivi des consommations par chantier et par matériau :
+- **Allocations** — budget matière défini par chantier/matériau, éditable en ligne (inline edit)
+- **Consommations** — saisie d'entrées de consommation avec date et notes (dialog)
+- **Tableau de stats** — vue agrégée : consommé, alloué, % d'avancement, projection en fin de chantier
+- Filtres par chantier et par matériau
+- Badges de projection (sous-budget / dépassement estimé)
 
 ### Catalogue
 Gestion des référentiels partagés :
@@ -57,7 +65,7 @@ Connexion par email/mot de passe (NextAuth v5, credentials). Deux rôles :
 | Langage | TypeScript |
 | Styles | Tailwind CSS v4 + shadcn/ui |
 | ORM | Prisma 7 |
-| Base de données | PostgreSQL (ex. Supabase) |
+| Base de données | PostgreSQL (ex. Neon) |
 | Auth | NextAuth v5 — credentials + bcrypt |
 | Stockage fichiers | Vercel Blob (logo entreprise) |
 | Drag & drop | @dnd-kit/core + @dnd-kit/sortable |
@@ -78,6 +86,10 @@ CompanySettings — singleton : nom / logo / adresse / téléphone
 LoadingList     — date / heureDepart / chantier / chauffeur / responsable
                   notes / statut / shareToken / créateur
   └── LoadingListItem — désignation / quantité / unité / ordre / coché
+
+Allocation      — chantier / matériau / quantité allouée / unité
+                  (unique par couple chantierId + materiauId)
+ConsommationEntry — chantier / matériau / quantité / unité / date / notes
 ```
 
 ---
@@ -86,7 +98,7 @@ LoadingList     — date / heureDepart / chantier / chauffeur / responsable
 
 ### Prérequis
 - Node.js 20+
-- Une base PostgreSQL (Supabase, Neon, locale…)
+- Une base PostgreSQL (Neon, Supabase, locale…)
 - Un projet Vercel (pour Blob)
 
 ### Démarrage local
@@ -145,6 +157,7 @@ app/
     history/             — Historique avec recherche et filtres
     catalogue/           — Gestion matériaux / chantiers / chauffeurs
     settings/            — Paramètres entreprise et utilisateurs
+    stats/               — Statistiques consommation par chantier
   check/[token]/         — Checklist mobile (public, sans auth)
   api/
     auth/[...nextauth]/  — Endpoint NextAuth
@@ -156,10 +169,11 @@ components/
   lists/                 — ListForm, ItemsTable, CatalogSearch
   settings/              — SettingsForm, UsersTable
   check/                 — ChecklistView (mobile)
+  stats/                 — StatsTable, StatsFilters, AllocationCell, ConsommationForm
   layout/                — Sidebar
 
 lib/
-  actions/               — Server Actions (listes, catalogue, settings)
+  actions/               — Server Actions (listes, catalogue, settings, stats)
   auth.ts                — Configuration NextAuth
   prisma.ts              — Instance Prisma
   types.ts               — Types partagés
