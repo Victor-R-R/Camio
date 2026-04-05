@@ -3,7 +3,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import Link from "next/link";
-import { duplicateList, deleteList, updateListStatus } from "@/lib/actions/lists";
+import { duplicateList, updateListStatus } from "@/lib/actions/lists";
+import { DeleteListButton } from "@/components/lists/DeleteListButton";
 import { ListStatus } from "@/lib/generated/prisma/enums";
 
 const STATUS_LABELS: Record<ListStatus, string> = {
@@ -70,8 +71,8 @@ export default async function HistoryPage({
         <Button type="submit" variant="outline">Filtrer</Button>
       </form>
 
-      <div className="border rounded-md overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="border rounded-md overflow-x-auto">
+        <table className="w-full text-sm min-w-[700px]">
           <thead className="bg-muted/50">
             <tr>
               <th className="p-3 text-left">Date</th>
@@ -109,6 +110,7 @@ export default async function HistoryPage({
                         </Button>
                       </form>
                     )}
+                    <DeleteListButton id={list.id} />
                   </div>
                 </td>
               </tr>
