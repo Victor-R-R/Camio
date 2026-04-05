@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,17 +15,25 @@ interface Props {
 export function SettingsForm({ company }: Props) {
   const [logoUrl, setLogoUrl] = useState(company?.logoUrl ?? "");
   const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
 
   async function handleLogoUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setUploadError("");
     const fd = new FormData();
     fd.append("file", file);
     try {
       const res = await fetch("/api/upload", { method: "POST", body: fd });
       const data = await res.json();
-      if (data.url) setLogoUrl(data.url);
+      if (!res.ok || !data.url) {
+        setUploadError("Échec de l'upload du logo");
+      } else {
+        setLogoUrl(data.url);
+      }
+    } catch {
+      setUploadError("Erreur réseau lors de l'upload");
     } finally {
       setUploading(false);
     }
@@ -50,11 +59,12 @@ export function SettingsForm({ company }: Props) {
         <Label>Logo</Label>
         <div className="flex items-center gap-4">
           {logoUrl && (
-            <img src={logoUrl} alt="Logo" className="h-16 object-contain border rounded p-1" />
+            <Image src={logoUrl} alt="Logo" width={64} height={64} className="h-16 object-contain border rounded p-1" unoptimized />
           )}
           <Input type="file" accept="image/*" onChange={handleLogoUpload} disabled={uploading} />
         </div>
         {uploading && <p className="text-sm text-muted-foreground">Upload en cours…</p>}
+        {uploadError && <p className="text-sm text-destructive">{uploadError}</p>}
       </div>
       <Button type="submit" className="bg-[#E07B3A] hover:bg-[#c96a2a]">
         Enregistrer
