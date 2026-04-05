@@ -128,8 +128,13 @@ export function StatsTable({ statsRows }: { statsRows: StatsRow[] }) {
               const totalTransporte = rows.reduce((s, r) => s + r.transporte, 0);
               const totalRestant =
                 totalAlloue !== null ? totalAlloue - totalConsomme : null;
+
+              // Only compute meaningful aggregates when all materials share the same unit
+              const units = [...new Set(rows.map((r) => r.unit))];
+              const singleUnit = units.length === 1 ? units[0] : null;
+
               const pct =
-                totalAlloue && totalAlloue > 0
+                singleUnit && totalAlloue && totalAlloue > 0
                   ? (totalConsomme / totalAlloue) * 100
                   : null;
 
@@ -168,32 +173,32 @@ export function StatsTable({ statsRows }: { statsRows: StatsRow[] }) {
                           <div className="font-semibold text-blue-900">
                             {chantierName}
                           </div>
-                          {pct !== null && (
+                          {pct !== null && singleUnit && (
                             <div className="text-xs text-muted-foreground">
-                              {totalConsomme} consommé · {totalRestant} restant
+                              {totalConsomme} {singleUnit} consommé · {totalRestant} {singleUnit} restant
                             </div>
                           )}
                         </div>
                       </div>
                     </td>
                     <td className="px-4 py-3 text-right text-muted-foreground text-xs">
-                      {totalAlloue !== null ? `${totalAlloue}` : "—"}
+                      {totalAlloue !== null && singleUnit ? `${totalAlloue} ${singleUnit}` : "—"}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">
-                      {totalTransporte > 0 ? totalTransporte : "—"}
+                      {totalTransporte > 0 && singleUnit ? `${totalTransporte} ${singleUnit}` : "—"}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums font-semibold">
-                      {totalConsomme > 0 ? totalConsomme : "—"}
+                      {totalConsomme > 0 && singleUnit ? `${totalConsomme} ${singleUnit}` : "—"}
                     </td>
                     <td className="px-4 py-3 text-right tabular-nums">
-                      {totalRestant === null ? (
+                      {totalRestant === null || !singleUnit ? (
                         "—"
                       ) : totalRestant <= 0 ? (
                         <span className="text-red-600 font-medium">
-                          {totalRestant}
+                          {totalRestant} {singleUnit}
                         </span>
                       ) : (
-                        totalRestant
+                        `${totalRestant} ${singleUnit}`
                       )}
                     </td>
                     <td className="px-4 py-3">
