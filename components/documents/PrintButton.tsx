@@ -18,9 +18,8 @@ export function PrintButton({ targetId }: Props) {
 
   function handleClick() {
     const el = document.getElementById(targetId);
-    if (el) {
-      contentRef.current = el;
-    }
+    if (!el) return;
+    contentRef.current = el;
     handlePrint();
   }
 

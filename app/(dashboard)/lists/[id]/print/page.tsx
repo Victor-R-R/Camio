@@ -41,8 +41,8 @@ export default async function PrintPage({ params }: { params: Promise<{ id: stri
   // Calculate bon number: count lists created same year up to and including this one
   const yearStart = new Date(`${list.createdAt.getFullYear()}-01-01`);
   const sequenceIndex = await prisma.loadingList.count({
-    where: { createdAt: { gte: yearStart, lte: list.createdAt } },
-  });
+    where: { createdAt: { gte: yearStart, lt: list.createdAt } },
+  }) + 1;
   const bonNumber = getBonNumber(list.createdAt, sequenceIndex);
 
   const shareUrl = `${process.env.NEXTAUTH_URL ?? process.env.AUTH_URL ?? "http://localhost:3000"}/check/${list.shareToken}`;

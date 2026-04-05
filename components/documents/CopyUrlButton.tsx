@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Copy, Check } from "lucide-react";
+import { toast } from "sonner";
 
 interface Props {
   url: string;
@@ -17,7 +18,7 @@ export function CopyUrlButton({ url }: Props) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // fallback: ignore
+      toast.error("Impossible de copier le lien");
     }
   }
 
