@@ -27,7 +27,9 @@ model Chantier {
   name    String
   address String?
   active  Boolean       @default(true)
-  lists   LoadingList[]
+  lists         LoadingList[]
+  allocations   Allocation[]
+  consommations ConsommationEntry[]
 }
 
 model Chauffeur {
@@ -43,7 +45,9 @@ model Materiau {
   designation String
   defaultUnit Unit
   active      Boolean           @default(true)
-  items       LoadingListItem[]
+  items         LoadingListItem[]
+  allocations   Allocation[]
+  consommations ConsommationEntry[]
 }
 
 enum Unit {
@@ -103,4 +107,31 @@ model CompanySettings {
   logoUrl String?
   address String?
   phone   String?
+}
+
+model Allocation {
+  id         String   @id @default(cuid())
+  chantierId String
+  chantier   Chantier @relation(fields: [chantierId], references: [id])
+  materiauId String
+  materiau   Materiau @relation(fields: [materiauId], references: [id])
+  quantity   Float
+  unit       Unit
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([chantierId, materiauId])
+}
+
+model ConsommationEntry {
+  id         String   @id @default(cuid())
+  chantierId String
+  chantier   Chantier @relation(fields: [chantierId], references: [id])
+  materiauId String
+  materiau   Materiau @relation(fields: [materiauId], references: [id])
+  quantity   Float
+  unit       Unit
+  date       DateTime @default(now())
+  notes      String?
+  createdAt  DateTime @default(now())
 }
