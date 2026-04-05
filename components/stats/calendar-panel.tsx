@@ -38,7 +38,6 @@ export function CalendarPanel({ entries, colorMap }: Props) {
   }, [entries]);
 
   const { bars, maxMonthTotal } = useMemo(() => {
-    let max = 0;
     const result = Array.from({ length: 12 }, (_, i) => {
       const key = `${year}-${String(i + 1).padStart(2, "0")}`;
       const matMap = annualData.get(key) ?? new Map<string, number>();
@@ -52,10 +51,10 @@ export function CalendarPanel({ entries, colorMap }: Props) {
         });
         monthTotal += total;
       }
-      if (monthTotal > max) max = monthTotal;
       return { month: i, stacks, monthTotal };
     });
-    return { bars: result, maxMonthTotal: max };
+    const maxMonthTotal = result.reduce((acc, b) => Math.max(acc, b.monthTotal), 0);
+    return { bars: result, maxMonthTotal };
   }, [annualData, year, colorMap]);
 
   // Unique materials that appear in entries (for legend)
