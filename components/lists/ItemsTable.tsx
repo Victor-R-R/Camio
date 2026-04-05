@@ -136,18 +136,18 @@ export function ItemsTable({ items, onChange }: Props) {
           ])
         }
       />
-      <div className="border rounded-md overflow-hidden">
-        <table className="w-full text-sm">
-          <thead className="bg-muted/50">
-            <tr>
-              <th className="p-2 w-8" />
-              <th className="p-2 text-left">Désignation</th>
-              <th className="p-2 text-left w-28">Quantité</th>
-              <th className="p-2 text-left w-36">Unité</th>
-              <th className="p-2 w-10" />
-            </tr>
-          </thead>
-          <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+      <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+        <div className="border rounded-md overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-muted/50">
+              <tr>
+                <th className="p-2 w-8" />
+                <th className="p-2 text-left">Désignation</th>
+                <th className="p-2 text-left w-28">Quantité</th>
+                <th className="p-2 text-left w-36">Unité</th>
+                <th className="p-2 w-10" />
+              </tr>
+            </thead>
             <SortableContext items={items.map((i) => i.id)} strategy={verticalListSortingStrategy}>
               <tbody>
                 {items.map((item) => (
@@ -155,9 +155,9 @@ export function ItemsTable({ items, onChange }: Props) {
                 ))}
               </tbody>
             </SortableContext>
-          </DndContext>
-        </table>
-      </div>
+          </table>
+        </div>
+      </DndContext>
       <Button variant="outline" size="sm" onClick={addBlankItem} type="button">
         <Plus className="h-4 w-4 mr-1" /> Ajouter une ligne libre
       </Button>
